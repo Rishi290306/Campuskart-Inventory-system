@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-slate-900">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login | CampusKart</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .glass-panel { background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.05); }
+        @keyframes float { 0% { transform: translateY(0px); } 50% { transform: translateY(-20px); } 100% { transform: translateY(0px); } }
+        .float-icon { animation: float 6s ease-in-out infinite; }
+    </style>
+</head>
+<body class="h-full">
+    <div class="flex min-h-full">
+        <!-- Brand Section (Hidden on Mobile) -->
+        <div class="hidden lg:flex flex-1 relative bg-indigo-950 overflow-hidden">
+            <div class="absolute inset-0 opacity-20">
+                <div class="absolute top-0 -left-20 w-96 h-96 bg-indigo-500 rounded-full blur-[120px]"></div>
+                <div class="absolute bottom-0 -right-20 w-96 h-96 bg-purple-500 rounded-full blur-[120px]"></div>
+            </div>
+            
+            <div class="relative z-10 w-full flex flex-col justify-center items-center p-20 text-center">
+                <div class="w-24 h-24 bg-white/10 rounded-3xl backdrop-blur-xl border border-white/20 flex items-center justify-center mb-12 shadow-2xl float-icon">
+                    <i class="fas fa-cart-shopping text-white text-4xl"></i>
+                </div>
+                <h1 class="text-6xl font-black text-white tracking-tighter mb-6 italic">CampusKart</h1>
+                <p class="text-xl text-indigo-300 font-medium max-w-lg leading-relaxed">The standard in intelligent resource management and automated inventory tracking for modern educational institutions.</p>
+                
+                <div class="mt-16 grid grid-cols-2 gap-8 text-left w-full max-w-md">
+                    <div class="p-6 rounded-3xl bg-white/5 border border-white/10">
+                        <i class="fas fa-microchip text-indigo-400 mb-3 block"></i>
+                        <h4 class="text-white font-bold text-sm">Automated Sync</h4>
+                        <p class="text-xs text-indigo-400/60 mt-1">Real-time database integrity checks.</p>
+                    </div>
+                    <div class="p-6 rounded-3xl bg-white/5 border border-white/10">
+                        <i class="fas fa-fingerprint text-indigo-400 mb-3 block"></i>
+                        <h4 class="text-white font-bold text-sm">Access Control</h4>
+                        <p class="text-xs text-indigo-400/60 mt-1">Granular role-based permissions.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Login Form Section -->
+        <div class="flex-1 flex flex-col justify-center py-12 px-8 lg:px-24 bg-slate-950 border-l border-white/5">
+            <div class="mx-auto w-full max-w-md">
+                <div class="lg:hidden text-center mb-12">
+                     <h1 class="text-3xl font-black text-white tracking-tighter italic">CampusKart</h1>
+                </div>
+
+                <div class="mb-10">
+                    <h2 class="text-3xl font-black text-white tracking-tight">Identity Access</h2>
+                    <p class="text-slate-500 mt-2 font-medium">Please enter your authorized credentials.</p>
+                </div>
+
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <div class="mb-6 px-5 py-4 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-500 text-sm font-bold flex items-center gap-3 animate-pulse">
+                                <i class="fas fa-exclamation-circle"></i> {{ message }}
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+
+                <form class="space-y-8" action="{{ url_for('login') }}" method="POST">
+                    {{ form.hidden_tag() }}
+                    <div class="space-y-6">
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3 ml-1">Assigned Identifier</label>
+                            <div class="relative group">
+                                <span class="absolute inset-y-0 left-0 pl-5 flex items-center text-slate-600 group-focus-within:text-indigo-500 transition-colors">
+                                    <i class="fas fa-user-shield"></i>
+                                </span>
+                                {{ form.username(class="w-full bg-slate-900 border border-white/10 rounded-2xl pl-12 pr-5 py-4 text-white placeholder-slate-600 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all font-semibold", placeholder="Username") }}
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3 ml-1">Access Token</label>
+                            <div class="relative group">
+                                <span class="absolute inset-y-0 left-0 pl-5 flex items-center text-slate-600 group-focus-within:text-indigo-500 transition-colors">
+                                    <i class="fas fa-key"></i>
+                                </span>
+                                {{ form.password(class="w-full bg-slate-900 border border-white/10 rounded-2xl pl-12 pr-5 py-4 text-white placeholder-slate-600 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all font-semibold", placeholder="Password", type="password") }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="pt-4">
+                        <button type="submit" class="w-full bg-white text-slate-950 font-black py-4 rounded-2xl hover:bg-indigo-500 hover:text-white transition-all transform active:scale-95 shadow-xl shadow-white/5 uppercase tracking-widest text-xs">
+                            Verify Identity
+                        </button>
+                    </div>
+
+                    <div class="pt-10 flex items-center justify-between border-t border-white/5 text-[10px] uppercase font-bold tracking-widest">
+                        <span class="text-slate-600">v4.2.0 SECURE</span>
+                        <a href="#" class="text-indigo-500 hover:text-indigo-400">Request Access?</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

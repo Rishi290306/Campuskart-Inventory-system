@@ -1,0 +1,210 @@
+{% extends "base.html" %}
+
+{% block title %}Registry | CampusKart{% endblock %}
+
+{% block header_title %}Student Directory{% endblock %}
+
+{% block content %}
+<div class="grid grid-cols-1 xl:grid-cols-3 gap-8 items-start">
+    
+    <!-- Add Student Panel -->
+    <div class="card-modern">
+        <div class="p-8 border-b border-slate-100 flex items-center gap-3">
+            <div class="w-10 h-10 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-600">
+                <i class="fas fa-user-plus text-sm"></i>
+            </div>
+            <h4 class="text-lg font-black text-slate-800">Enrollment Form</h4>
+        </div>
+        <div class="p-8">
+            <form id="studentForm" action="/add_student" method="POST" class="space-y-6">
+                <div>
+                    <label class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Full Legal Name</label>
+                    <input type="text" name="fullName" placeholder="e.g. Alex Johnson" class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-3 outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all font-medium" required>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Roll Number</label>
+                        <input type="text" name="rollNumber" placeholder="VU1F..." class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-3 outline-none focus:border-indigo-500 font-bold" required>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Dept.</label>
+                        <select name="department" class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-3 outline-none font-semibold text-slate-700" required>
+                            <option value="CSE">CSE</option>
+                            <option value="ECE">ECE</option>
+                            <option value="ME">ME</option>
+                            <option value="CE">CE</option>
+                            <option value="EE">EE</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Contact Link (Email/Phone)</label>
+                    <div class="space-y-3">
+                        <input type="email" name="email" placeholder="alex@inst.edu" class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-3 outline-none text-sm">
+                        <input type="tel" name="phone" placeholder="+91 000 000 0000" class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-3 outline-none text-sm">
+                    </div>
+                </div>
+
+                <div class="pt-4">
+                    <button type="submit" class="w-full btn-primary-modern flex items-center justify-center gap-2">
+                        <i class="fas fa-check-double text-sm"></i> Commit Registration
+                    </button>
+                    <p class="text-[10px] text-center text-slate-400 mt-4 uppercase tracking-widest">SIS Identity Core</p>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Student List Table -->
+    <div class="xl:col-span-2 card-modern overflow-hidden">
+        <div class="p-8 border-b border-slate-100 flex items-center justify-between bg-white sticky top-0 z-10">
+            <h4 class="text-lg font-black text-slate-800">Verified Records <span class="bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded text-xs ml-2">{{ students|length }}</span></h4>
+            <div class="flex gap-2">
+                <input type="text" id="studentSearch" placeholder="Filter records..." class="bg-slate-50 border border-slate-100 rounded-xl px-4 py-2 text-sm outline-none focus:border-indigo-300">
+            </div>
+        </div>
+        
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse" id="studentTable">
+                <thead class="bg-slate-50 border-b border-slate-200">
+                    <tr>
+                        <th class="px-8 py-5 text-xs font-bold text-slate-400 uppercase tracking-wider">Identity</th>
+                        <th class="px-8 py-5 text-xs font-bold text-slate-400 uppercase tracking-wider">Allocated Asset</th>
+                        <th class="px-8 py-5 text-xs font-bold text-slate-400 uppercase tracking-wider text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    {% for student in students %}
+                    <tr class="hover:bg-slate-50/50 transition-colors group">
+                        <td class="px-8 py-6">
+                            <div class="flex items-center gap-4">
+                                <div class="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-black text-lg group-hover:scale-110 transition-transform">
+                                    {{ student.full_name[0] }}
+                                </div>
+                                <div>
+                                    <a href="/student/{{ student.id }}" class="text-sm font-black text-slate-800 hover:text-indigo-600 transition-colors">{{ student.full_name }}</a>
+                                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">{{ student.department }} | {{ student.roll_number }}</p>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-8 py-6">
+                            {% if student.product_id and student.current_product %}
+                            <div class="flex items-center gap-2">
+                                <div class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+                                <span class="text-sm font-bold text-slate-700">{{ student.current_product.name }}</span>
+                            </div>
+                            <p class="text-[10px] text-slate-400 ml-4 font-semibold uppercase">Assigned: {{ student.assignment_date if student.assignment_date else 'Pre-Migration' }}</p>
+                            {% if student.return_date %}
+                            <p class="text-[10px] text-rose-500 ml-4 font-bold uppercase mt-0.5">Due: {{ student.return_date }}</p>
+                            {% endif %}
+                            {% else %}
+                            <span class="text-xs font-medium text-slate-300 italic">No assets linked</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-8 py-6 text-right">
+                            <div class="flex items-center justify-end gap-2">
+                                {% if not student.product_id %}
+                                <button onclick="openModal('assignProductModal{{ student.id }}')" class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 hover:bg-emerald-600 hover:text-white transition-all shadow-sm flex items-center justify-center tooltip" title="Assign Resource">
+                                    <i class="fas fa-plus"></i>
+                                </button>
+                                {% else %}
+                                <form method="POST" action="/return_product/{{ student.id }}" class="inline">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <button type="submit" class="w-10 h-10 rounded-xl bg-orange-50 text-orange-600 hover:bg-orange-600 hover:text-white transition-all shadow-sm flex items-center justify-center" title="Force Return">
+                                        <i class="fas fa-undo"></i>
+                                    </button>
+                                </form>
+                                {% endif %}
+                                <form action="{{ url_for('delete_student', student_id=student.id) }}" method="POST" class="inline" onsubmit="return confirm('Immediate Purge Action: Are you sure?')">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <button type="submit" class="w-10 h-10 rounded-xl bg-rose-50 text-rose-600 hover:bg-rose-600 hover:text-white transition-all shadow-sm flex items-center justify-center focus:outline-none" title="Purge Record">
+                                        <i class="fas fa-trash-alt text-sm"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Dynamic Assignment Modals -->
+{% for student in students %}
+{% if not student.product_id %}
+<div id="assignProductModal{{ student.id }}" class="hidden fixed inset-0 z-[60] overflow-y-auto px-4 py-8 pointer-events-none transition-all duration-300">
+    <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm pointer-events-auto" onclick="closeModal('assignProductModal{{ student.id }}')"></div>
+    <div class="relative bg-white rounded-3xl shadow-2xl w-full max-w-lg mx-auto p-10 pointer-events-auto transform translate-y-0 opacity-100 transition-all border border-slate-200">
+        <div class="flex items-center justify-between mb-8 pb-4 border-b border-slate-100">
+            <div>
+                <h3 class="text-2xl font-black text-slate-800">Resource Links</h3>
+                <p class="text-xs text-slate-400 font-bold uppercase tracking-widest mt-1">Contracting for {{ student.full_name }}</p>
+            </div>
+            <button onclick="closeModal('assignProductModal{{ student.id }}')" class="text-slate-400 hover:text-rose-500 transition-colors"><i class="fas fa-times text-lg"></i></button>
+        </div>
+        
+        <form action="/assign_product/{{ student.id }}" method="POST" class="space-y-8">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="space-y-2">
+                <label class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 italic">Active Inventory Matrix</label>
+                <select name="productId" class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 outline-none font-bold text-slate-800 text-lg shadow-inner appearance-none" required>
+                    <option value="">Select Asset...</option>
+                    {% for product in products %}
+                    <option value="{{ product.id }}">{{ product.name }} (Lvl: {{ product.quantity }})</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="space-y-2">
+                <label class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 italic">Unit Count Allocation</label>
+                <input type="number" name="quantity" value="1" min="1" class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 outline-none font-black text-indigo-600 text-center text-3xl shadow-inner" required>
+            </div>
+
+            <div class="space-y-2">
+                <label class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 italic">Scheduled Return Horizon (Due Date)</label>
+                <input type="date" name="dueDate" id="dueDate{{ student.id }}" class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 outline-none font-bold text-slate-800 text-lg shadow-inner" required>
+            </div>
+
+            <div class="pt-6">
+                <button type="submit" class="w-full btn-primary-modern bg-emerald-600 hover:bg-emerald-700 py-4 text-lg">Initialize Allocation</button>
+                <p class="text-[9px] text-center text-slate-400 mt-6 tracking-widest uppercase font-bold leading-relaxed opacity-50">Transaction will be logged permanently in student audit trails.</p>
+            </div>
+        </form>
+    </div>
+</div>
+{% endif %}
+{% endfor %}
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+function openModal(id) {
+    const m = document.getElementById(id);
+    m.classList.remove('hidden');
+    m.classList.add('flex');
+}
+
+function closeModal(id) {
+    const m = document.getElementById(id);
+    m.classList.remove('flex');
+    m.classList.add('hidden');
+}
+
+// Table search filter
+const searchInput = document.getElementById('studentSearch');
+if (searchInput) {
+    searchInput.addEventListener('keyup', function() {
+        const val = this.value.toLowerCase();
+        const rows = document.querySelectorAll('#studentTable tbody tr');
+        rows.forEach(row => {
+            row.style.display = row.textContent.toLowerCase().includes(val) ? '' : 'none';
+        });
+    });
+}
+</script>
+{% endblock %}

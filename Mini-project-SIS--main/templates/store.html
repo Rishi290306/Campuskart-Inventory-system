@@ -1,0 +1,404 @@
+{% extends "base.html" %}
+
+{% block title %}Inventory | CampusKart{% endblock %}
+
+{% block header_title %}Store Management{% endblock %}
+
+{% block content %}
+<!-- Inventory Actions Bar -->
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div class="flex items-center gap-2 bg-white border border-slate-200 px-4 py-2 rounded-2xl shadow-sm text-slate-400 focus-within:border-indigo-500 focus-within:ring-1 focus-within:ring-indigo-500 transition-all w-full md:w-96">
+        <i class="fas fa-search"></i>
+        <input type="text" id="inventorySearch" placeholder="Search products, categories..." class="bg-transparent border-none outline-none text-sm text-slate-700 w-full">
+    </div>
+
+    <div class="flex flex-wrap items-center gap-3">
+        {% if excel_support %}
+        <button onclick="openModal('uploadExcelModal')" class="flex items-center gap-2 px-5 py-2.5 bg-emerald-50 text-emerald-700 font-semibold rounded-xl hover:bg-emerald-100 transition-all border border-emerald-100">
+            <i class="fas fa-file-excel"></i> Import Excel
+        </button>
+        {% endif %}
+        <button onclick="openModal('addItemModal')" class="btn-primary-modern flex items-center gap-2">
+            <i class="fas fa-plus"></i> Add New Item
+        </button>
+    </div>
+</div>
+
+<!-- Stats Overview -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+    <div class="card-modern p-6 border-l-4 border-indigo-500">
+        <p class="text-xs font-bold text-slate-400 uppercase tracking-widest">Total SKU Count</p>
+        <h3 class="text-2xl font-black text-slate-800 mt-1">{{ products|length }}</h3>
+    </div>
+    <div class="card-modern p-6 border-l-4 border-rose-500">
+        <p class="text-xs font-bold text-slate-400 uppercase tracking-widest">Low Stock Alerts</p>
+        <h3 class="text-2xl font-black text-rose-600 mt-1">{{ products|selectattr('is_low_stock')|list|length }}</h3>
+    </div>
+    <div class="card-modern p-6 border-l-4 border-blue-500">
+        <p class="text-xs font-bold text-slate-400 uppercase tracking-widest">Managed Units</p>
+        <h3 class="text-2xl font-black text-slate-800 mt-1">{{ products|sum(attribute='quantity') }}</h3>
+    </div>
+</div>
+
+<!-- Inventory Table Section -->
+<div class="card-modern overflow-hidden">
+    <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse" id="inventoryTable">
+            <thead class="bg-slate-50 border-b border-slate-200">
+                <tr>
+                    <th class="px-8 py-5 text-xs font-bold text-slate-400 uppercase tracking-wider">Product Information</th>
+                    <th class="px-8 py-5 text-xs font-bold text-slate-400 uppercase tracking-wider">Metrics</th>
+                    <th class="px-8 py-5 text-xs font-bold text-slate-400 uppercase tracking-wider">Availability</th>
+                    <th class="px-8 py-5 text-xs font-bold text-slate-400 uppercase tracking-wider">Last Modified</th>
+                    <th class="px-8 py-5 text-xs font-bold text-slate-400 uppercase tracking-wider text-right">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+                {% for product in products %}
+                <tr class="hover:bg-slate-50/50 transition-colors group">
+                    <td class="px-8 py-6">
+                        <div class="flex items-center gap-4">
+                            <div class="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-500 group-hover:bg-white group-hover:shadow-sm transition-all">
+                                <i class="fas fa-box"></i>
+                            </div>
+                            <div>
+                                <p class="text-sm font-bold text-slate-800">{{ product.name }}</p>
+                                <span class="inline-block px-2 py-0.5 rounded-lg bg-indigo-50 text-indigo-600 text-[10px] font-bold uppercase tracking-tighter mt-1">{{ product.category }}</span>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="px-8 py-6">
+                        <div class="flex items-center gap-6">
+                            <div class="text-center">
+                                <p class="text-sm font-black text-slate-800 lowercase">{{ product.quantity }}</p>
+                                <p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Curr</p>
+                            </div>
+                            <div class="text-center">
+                                <p class="text-sm font-black text-slate-300 lowercase">{{ product.min_stock_level }}</p>
+                                <p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Min</p>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="px-8 py-6">
+                        {% if product.is_low_stock %}
+                        <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-rose-100 text-rose-700">
+                            <span class="w-1.5 h-1.5 rounded-full bg-rose-500 mr-2"></span> Low Stock
+                        </span>
+                        {% else %}
+                        <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-700">
+                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-2"></span> In Stock
+                        </span>
+                        {% endif %}
+                    </td>
+                    <td class="px-8 py-6">
+                        <p class="text-sm text-slate-500">{{ product.date_of_issue.strftime('%d %b, %Y') if product.date_of_issue else 'No Data' }}</p>
+                    </td>
+                    <td class="px-8 py-6 text-right">
+                        <button class="edit-item w-10 h-10 rounded-xl bg-slate-100 text-slate-600 hover:bg-indigo-600 hover:text-white transition-all shadow-sm" 
+                                data-id="{{ product.id }}"
+                                data-name="{{ product.name }}"
+                                data-category="{{ product.category }}"
+                                data-quantity="{{ product.quantity }}"
+                                data-min-stock="{{ product.min_stock_level }}">
+                            <i class="fas fa-pen-nib"></i>
+                        </button>
+                        <form action="{{ url_for('delete_product', product_id=product.id) }}" method="POST" class="inline" onsubmit="return confirm('Immediate Resource Purge: Are you sure?')">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button type="submit" class="w-10 h-10 rounded-xl bg-rose-50 text-rose-600 hover:bg-rose-600 hover:text-white transition-all shadow-sm flex items-center justify-center focus:outline-none" title="Purge Resource">
+                                <i class="fas fa-trash-alt text-xs"></i>
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Modal: Add/Edit Item -->
+<div id="addItemModal" class="hidden fixed inset-0 z-[60] overflow-y-auto px-4 py-8 pointer-events-none transition-all duration-300">
+    <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm pointer-events-auto" onclick="closeModal('addItemModal')"></div>
+    <div class="relative bg-white rounded-3xl shadow-2xl w-full max-w-lg mx-auto p-8 pointer-events-auto transform translate-y-0 opacity-100 transition-all border border-slate-200">
+        <div class="flex items-center justify-between mb-8">
+            <h3 class="text-2xl font-black text-slate-800" id="modalTitle">Configure Item</h3>
+            <button onclick="closeModal('addItemModal')" class="text-slate-400 hover:text-rose-500 transition-colors"><i class="fas fa-times text-lg"></i></button>
+        </div>
+        
+        <form id="itemForm" method="POST" class="space-y-6">
+            {{ form.hidden_tag() }}
+            <div>
+                <label class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">{{ form.name.label.text }}</label>
+                {{ form.name(class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-3 outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all", placeholder="e.g. Dell Latitude 5420") }}
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">{{ form.category.label.text }}</label>
+                {{ form.category(class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-3 outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all") }}
+            </div>
+            <div class="grid grid-cols-2 gap-6">
+                <div>
+                    <label class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">{{ form.quantity.label.text }}</label>
+                    {{ form.quantity(class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-3 outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all", type="number") }}
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">{{ form.min_stock_level.label.text }}</label>
+                    {{ form.min_stock_level(class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-3 outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all", type="number") }}
+                </div>
+            </div>
+            <div class="pt-4 flex gap-4">
+                <button type="button" onclick="closeModal('addItemModal')" class="flex-1 btn-secondary-modern">Discard</button>
+                <button type="submit" class="flex-[2] btn-primary-modern">Persist Changes</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal: Excel Import (Visually Redesigned) -->
+{% if excel_support %}
+<div id="uploadExcelModal" class="hidden fixed inset-0 z-[60] overflow-y-auto px-4 py-8 pointer-events-none transition-all duration-300">
+    <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm pointer-events-auto" onclick="closeModal('uploadExcelModal')"></div>
+    <div class="relative bg-white rounded-3xl shadow-2xl w-full max-w-4xl mx-auto p-8 pointer-events-auto transform transition-all border border-slate-200">
+        <div class="flex items-center justify-between mb-8 pb-6 border-b border-slate-100">
+            <h3 class="text-2xl font-black text-slate-800">Bulk Data Import</h3>
+            <button onclick="closeModal('uploadExcelModal')" class="text-slate-400 hover:text-rose-500 transition-colors"><i class="fas fa-times text-lg"></i></button>
+        </div>
+
+        <!-- Custom Upload UI -->
+        <div id="uploadStep" class="space-y-8 text-center">
+            <div class="bg-indigo-50 p-6 rounded-2xl border border-indigo-100 text-left">
+                <h5 class="text-sm font-bold text-indigo-900 mb-2">Import Requirements</h5>
+                <p class="text-xs text-indigo-700 leading-relaxed">System expects an Excel (.xlsx/.xls) or CSV with: <strong>Name, Category, Quantity, Min Stock</strong>. You can <a href="{{ url_for('download_template') }}" class="font-bold underline decoration-indigo-300">Download Template</a> here.</p>
+            </div>
+
+            <div id="dropZone" class="border-4 border-dashed border-slate-100 bg-slate-50/50 rounded-3xl p-12 hover:border-indigo-300 hover:bg-indigo-50/30 transition-all group cursor-pointer">
+                <div class="w-16 h-16 rounded-2xl bg-indigo-100 text-indigo-600 flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform">
+                    <i class="fas fa-cloud-upload-alt text-2xl"></i>
+                </div>
+                <h4 class="text-lg font-bold text-slate-800">Drop data batch here</h4>
+                <p class="text-sm text-slate-400 mt-2">Maximum file size 16MB | .xlsx, .csv supported</p>
+                <input type="file" id="excelFileInput" accept=".xlsx,.xls,.csv" class="hidden">
+            </div>
+            
+            <div id="fileInfo" class="hidden bg-slate-100 p-4 rounded-2xl flex items-center justify-between">
+                <span class="truncate text-sm font-semibold text-slate-700" id="fileName"></span>
+                <button onclick="clearFile()" class="text-rose-500 font-bold px-3 py-1 hover:bg-rose-50 rounded-lg">Remove</button>
+            </div>
+
+            <div id="loadingSpinner" class="hidden">
+                <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-600 mx-auto"></div>
+                <p class="text-sm text-slate-500 mt-4">Processing matrix...</p>
+            </div>
+
+            <button id="uploadBtn" onclick="uploadFile()" class="btn-primary-modern hidden mx-auto min-w-[200px]">Analyze Data</button>
+        </div>
+
+        <!-- Preview UI -->
+        <div id="previewStep" class="hidden space-y-8 animate-fadeIn">
+            <div class="grid grid-cols-3 gap-6">
+                <div class="bg-indigo-50 p-4 rounded-2xl text-center border border-indigo-100">
+                    <h5 id="totalRows" class="text-2xl font-black text-indigo-900">0</h5>
+                    <p class="text-[10px] font-bold text-indigo-400 uppercase tracking-widest mt-1">Total Entries</p>
+                </div>
+                <div class="bg-emerald-50 p-4 rounded-2xl text-center border border-emerald-100">
+                    <h5 id="validRows" class="text-2xl font-black text-emerald-900">0</h5>
+                    <p class="text-[10px] font-bold text-emerald-400 uppercase tracking-widest mt-1">Ready for Sync</p>
+                </div>
+                <div class="bg-rose-50 p-4 rounded-2xl text-center border border-rose-100">
+                    <h5 id="errorRows" class="text-2xl font-black text-rose-900">0</h5>
+                    <p class="text-[10px] font-bold text-rose-400 uppercase tracking-widest mt-1">Anomalies</p>
+                </div>
+            </div>
+
+            <div class="max-h-96 overflow-y-auto border border-slate-100 rounded-2xl bg-slate-50/20">
+                <table class="w-full text-left text-sm">
+                    <thead class="sticky top-0 bg-slate-200/80 backdrop-blur text-slate-600 font-bold">
+                        <tr>
+                            <th class="p-4">Row</th>
+                            <th class="p-4">Product Name</th>
+                            <th class="p-4">SKU Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="previewTableBody" class="divide-y divide-slate-100"></tbody>
+                </table>
+            </div>
+
+            <div class="flex gap-4">
+                <button onclick="backToUpload()" class="btn-secondary-modern flex-1">Back</button>
+                <button id="importBtn" onclick="importData()" class="btn-primary-modern flex-[2] bg-emerald-600 hover:bg-emerald-700">Commit Import</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+/**
+ * Modal Management
+ */
+function openModal(id) {
+    const m = document.getElementById(id);
+    m.classList.remove('hidden');
+    m.classList.add('flex');
+    // For specific resetting logic
+    if (id === 'addItemModal' && !m.dataset.editing) {
+        document.getElementById('itemForm').reset();
+        document.getElementById('itemForm').action = '{{ url_for("add_product") }}';
+        document.getElementById('modalTitle').textContent = 'Configure Item';
+        const existingId = document.querySelector('input[name="product_id"]');
+        if (existingId) existingId.remove();
+    }
+}
+
+function closeModal(id) {
+    const m = document.getElementById(id);
+    m.classList.remove('flex');
+    m.classList.add('hidden');
+    delete m.dataset.editing;
+}
+
+// Search functionality
+const searchInput = document.getElementById('inventorySearch');
+if (searchInput) {
+    searchInput.addEventListener('keyup', function() {
+        const value = this.value.toLowerCase();
+        const rows = document.querySelectorAll('#inventoryTable tbody tr');
+        rows.forEach(row => {
+            const text = row.textContent.toLowerCase();
+            row.style.display = text.includes(value) ? '' : 'none';
+        });
+    });
+}
+
+// Handle edit button clicks
+document.querySelectorAll('.edit-item').forEach(button => {
+    button.addEventListener('click', function() {
+        const modal = document.getElementById('addItemModal');
+        modal.dataset.editing = "true";
+        const form = document.getElementById('itemForm');
+        
+        form.action = `{{ url_for('update_product') }}`;
+        document.getElementById('modalTitle').textContent = 'Edit System Resource';
+        
+        document.getElementById('name').value = this.dataset.name;
+        document.getElementById('category').value = this.dataset.category;
+        document.getElementById('quantity').value = this.dataset.quantity;
+        document.getElementById('min_stock_level').value = this.dataset.minStock;
+        
+        let idInput = document.querySelector('input[name="product_id"]');
+        if (!idInput) {
+            idInput = document.createElement('input');
+            idInput.type = 'hidden';
+            idInput.name = 'product_id';
+            form.appendChild(idInput);
+        }
+        idInput.value = this.dataset.id;
+        
+        openModal('addItemModal');
+    });
+});
+
+/**
+ * Excel Sync Logic
+ */
+{% if excel_support %}
+let selectedFile = null;
+let parsedData = null;
+
+const excelFileInput = document.getElementById('excelFileInput');
+const dropZone = document.getElementById('dropZone');
+
+if (dropZone) {
+    dropZone.addEventListener('click', () => excelFileInput.click());
+    dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('border-indigo-400', 'bg-indigo-50/50'); });
+    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('border-indigo-400', 'bg-indigo-50/50'));
+    dropZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropZone.classList.remove('border-indigo-400', 'bg-indigo-50/50');
+        if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+    });
+}
+
+excelFileInput.addEventListener('change', (e) => handleFile(e.target.files[0]));
+
+function handleFile(file) {
+    if (!file) return;
+    const name = file.name.toLowerCase();
+    if (!['.xlsx', '.xls', '.csv'].some(ext => name.endsWith(ext))) {
+        alert('Format error: Please use XLSX, XLS, or CSV.');
+        return;
+    }
+    selectedFile = file;
+    document.getElementById('fileName').textContent = file.name;
+    document.getElementById('fileInfo').classList.remove('hidden');
+    document.getElementById('uploadBtn').classList.remove('hidden');
+}
+
+function clearFile() {
+    selectedFile = null;
+    excelFileInput.value = '';
+    document.getElementById('fileInfo').classList.add('hidden');
+    document.getElementById('uploadBtn').classList.add('hidden');
+}
+
+async function uploadFile() {
+    document.getElementById('loadingSpinner').classList.remove('hidden');
+    document.getElementById('uploadBtn').classList.add('hidden');
+    
+    const fd = new FormData();
+    fd.append('file', selectedFile);
+    
+    try {
+        const res = await API.request('{{ url_for("upload_excel") }}', { 
+            method: 'POST', 
+            body: fd,
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        });
+        
+        if (res.success) {
+            parsedData = res.data;
+            document.getElementById('uploadStep').classList.add('hidden');
+            document.getElementById('previewStep').classList.remove('hidden');
+            document.getElementById('totalRows').textContent = res.total_rows;
+            document.getElementById('validRows').textContent = res.valid_rows;
+            document.getElementById('errorRows').textContent = res.error_count;
+            
+            const tbody = document.getElementById('previewTableBody');
+            tbody.innerHTML = res.data.slice(0, 50).map(item => `
+                <tr class="hover:bg-slate-50">
+                    <td class="p-4 font-bold text-slate-400">#${item.row_number}</td>
+                    <td class="p-4 text-slate-800">${item.name}</td>
+                    <td class="p-4"><span class="px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-50 text-indigo-600">${item.category}</span></td>
+                </tr>
+            `).join('');
+        }
+    } catch (e) { alert(e.message); }
+    finally { document.getElementById('loadingSpinner').classList.add('hidden'); }
+}
+
+function backToUpload() {
+    document.getElementById('uploadStep').classList.remove('hidden');
+    document.getElementById('previewStep').classList.add('hidden');
+}
+
+async function importData() {
+    const btn = document.getElementById('importBtn');
+    btn.disabled = true;
+    btn.textContent = 'Syncing...';
+    
+    try {
+        const res = await API.request('{{ url_for("import_excel_data") }}', {
+            method: 'POST',
+            body: JSON.stringify({ products: parsedData })
+        });
+        if (res.success) location.reload();
+    } catch (e) { 
+        alert(e.message);
+        btn.disabled = false;
+        btn.textContent = 'Commit Import';
+    }
+}
+{% endif %}
+</script>
+{% endblock %}
