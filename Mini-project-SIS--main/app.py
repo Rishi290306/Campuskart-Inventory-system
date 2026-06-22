@@ -53,6 +53,7 @@ os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
 # Initialize extensions
 db = SQLAlchemy(app)
+from models import User, Product, Student, ProductAssignment, ActivityLog
 csrf = CSRFProtect(app)
 
 # Email/SMS configuration
